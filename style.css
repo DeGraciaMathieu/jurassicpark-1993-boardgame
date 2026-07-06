@@ -1,0 +1,146 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0b1a10;
+  --panel: #12241a;
+  --accent: #e8b31e;
+  --danger: #c0392b;
+  --text: #e6efe8;
+}
+
+body {
+  font-family: "Trebuchet MS", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: 56px 1fr;
+  grid-template-areas:
+    "top top"
+    "stage side";
+  height: 100vh;
+}
+
+#topbar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: linear-gradient(90deg, #1a0f0f, #2a1810);
+  border-bottom: 3px solid var(--accent);
+}
+
+#topbar h1 {
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+#status { font-size: 14px; opacity: 0.85; }
+
+#stage-container {
+  grid-area: stage;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #14304a, #06121f);
+}
+
+#stage-container canvas { display: block; }
+
+#sidebar {
+  grid-area: side;
+  background: var(--panel);
+  border-left: 2px solid #23402e;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* ---- Barre latérale ---- */
+.turn {
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+  background: #0e1c14;
+}
+.turn-name { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+.hint { font-size: 13px; opacity: 0.9; margin: 8px 0; line-height: 1.4; }
+.die { font-size: 14px; margin: 6px 0; }
+.big { font-size: 15px; margin: 8px 0; line-height: 1.4; }
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: 1px solid #3a5a44;
+  border-radius: 8px;
+  background: #16301f;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn:hover { background: #1f4a2e; }
+.btn.primary { background: var(--accent); color: #1a1a1a; font-weight: bold; border-color: var(--accent); }
+.btn.primary:hover { background: #f5c542; }
+
+.players { margin: 6px 0 14px; }
+.prow {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; font-size: 14px;
+}
+.prow.cur { background: #1f3a28; font-weight: bold; }
+.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid #000; }
+
+.log { border-top: 1px solid #2a4331; padding-top: 8px; }
+.log h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 6px; }
+.logline { font-size: 12px; padding: 3px 0; opacity: 0.85; border-bottom: 1px solid #18291e; }
+
+/* ---- Menu de départ ---- */
+#start-menu {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(3, 10, 6, 0.82); z-index: 10;
+}
+.menu-card {
+  background: #12241a; border: 2px solid var(--accent); border-radius: 14px;
+  padding: 32px 40px; text-align: center; max-width: 420px;
+}
+.menu-card h2 { color: var(--accent); font-size: 30px; letter-spacing: 2px; margin-bottom: 14px; }
+.menu-card p { font-size: 14px; line-height: 1.5; margin-bottom: 10px; opacity: 0.9; }
+.menu-q { font-weight: bold; margin-top: 16px !important; opacity: 1 !important; }
+.menu-btns { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
+.menu-btns button {
+  width: 64px; height: 64px; font-size: 24px; font-weight: bold;
+  background: var(--accent); color: #1a1a1a; border: none; border-radius: 10px; cursor: pointer;
+}
+.menu-btns button:hover { background: #f5c542; }
+
+/* ---- Main de cartes ---- */
+.hand { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.hand-empty { font-size: 13px; opacity: 0.6; margin: 8px 0; }
+.card {
+  display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px;
+  padding: 7px 9px; border-radius: 8px; border: 1px solid #2c4636;
+  background: #14291c; font-size: 13px; user-select: none;
+}
+.card-emoji { font-size: 18px; text-align: center; }
+.card-title { font-weight: bold; }
+.card-sub { font-size: 11px; opacity: 0.7; }
+.card.playable { cursor: pointer; border-color: #4a7a58; }
+.card.playable:hover { background: #1d3a27; }
+.card.disabled { opacity: 0.4; }
+.card.active { border-color: #66d9ff; box-shadow: 0 0 0 1px #66d9ff inset; }
+.card.selected { border-color: var(--accent); background: #2a2410; }
+
+.actions { margin-top: 6px; }
+.cardcount { font-size: 11px; opacity: 0.6; margin-left: auto; }
+.prow .cardcount { margin-left: 4px; }

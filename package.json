@@ -1,0 +1,7 @@
+{
+  "name": "jurassic-park-game",
+  "version": "0.1.0",
+  "description": "Jeu de plateau Jurassic Park (Milton Bradley 1992) en PixiJS",
+  "type": "module",
+  "private": true
+}
