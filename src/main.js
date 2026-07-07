@@ -1,5 +1,5 @@
 import { TILE } from "./board.js";
-import { axialToPixel, hexCorners, key } from "./hex.js";
+import { axialToPixel, hexCorners, key, neighbors } from "./hex.js";
 import { createGame, PHASE, DINO, tileAt } from "./state.js";
 import { CARD, CARD_INFO } from "./cards.js";
 import {
@@ -10,15 +10,20 @@ import {
 
 const HEX_SIZE = 42;
 
+const SEA_COLOR = 0x2f80b5;          // océan (fond du canevas)
+const LAND_GREENS = [0x4e8f3f, 0x578f42, 0x66994a, 0x3f7c38]; // variations de la jungle
+const ROAD_YELLOW = 0xf7d64b;        // Tour Road
+const ROAD_EDGE = 0xd9a441;          // liseré de la route
+const FENCE_RED = 0xe53935;          // clôture électrique (pointillés)
+
+// Icône dessinée au centre de certaines cases (le fond reste vert : c'est une île).
 const TILE_STYLE = {
-  [TILE.LAND]:           { fill: 0x3f6b3a, label: "" },
-  [TILE.ROAD]:           { fill: 0xb9975b, label: "" },
   [TILE.VISITOR_CENTER]: { fill: 0xe8b31e, label: "🏛️" },
-  [TILE.SHED]:           { fill: 0x5a6b7a, label: "🏚️" },
-  [TILE.RAPTOR_PEN]:     { fill: 0x2e7d32, label: "🦎" },
-  [TILE.SPITTER_PEN]:    { fill: 0xc9a227, label: "🐲" },
-  [TILE.TREX_START]:     { fill: 0x8e2b20, label: "🦖" },
-  [TILE.PAWN_START]:     { fill: 0x2f5f8f, label: "🚩" },
+  [TILE.SHED]:           { fill: null,     label: "🏚️" },
+  [TILE.RAPTOR_PEN]:     { fill: 0x3f8a3a, label: "" },
+  [TILE.SPITTER_PEN]:    { fill: 0x3f8a3a, label: "" },
+  [TILE.HELIPORT]:       { fill: null,     label: "🚁", disc: 0x2f9fd0 },
+  [TILE.PORT]:           { fill: null,     label: "⛴️", disc: 0x2f9fd0 },
 };
 
 const DINO_STYLE = {
@@ -43,7 +48,7 @@ const sel = {
 
 async function init() {
   const container = document.getElementById("stage-container");
-  await app.init({ background: 0x06121f, resizeTo: container, antialias: true });
+  await app.init({ background: SEA_COLOR, resizeTo: container, antialias: true });
   container.appendChild(app.canvas);
   window.addEventListener("resize", () => world && fitToScreen(container));
   showStartMenu();
@@ -95,27 +100,120 @@ function buildLayers() {
 }
 
 // ---------- Rendu statique du plateau ----------
+// Ordre des couches : île verte → clôtures pointillées → Tour Road jaune → icônes.
 function drawBoard() {
+  drawLand();
+  drawFences();
+  drawRoad();
+  drawIcons();
+}
+
+// Fond de l'île : chaque case est un hexagone vert (variation légère de la jungle).
+function drawLand() {
   for (const tile of state.tiles.values()) {
     const { x, y } = axialToPixel(tile.q, tile.r, HEX_SIZE);
     const style = TILE_STYLE[tile.type];
-    const isRoad = tile.type === TILE.ROAD;
+    const fill = style && style.fill != null ? style.fill : landGreen(tile.q, tile.r);
     const g = new PIXI.Graphics();
-    g.poly(hexCorners(x, y, HEX_SIZE - 1.5))
-      .fill(style.fill)
-      .stroke({ width: isRoad ? 3 : 1.5, color: isRoad ? 0xf2d9a0 : 0x1c2b1f });
+    g.poly(hexCorners(x, y, HEX_SIZE - 1))
+      .fill(fill)
+      .stroke({ width: 1, color: 0x2f5a2a, alpha: 0.6 });
     g.eventMode = "static";
     g.cursor = "pointer";
     g.on("pointertap", () => onTileClick(tile.q, tile.r));
     boardLayer.addChild(g);
-    if (style.label) {
-      const text = new PIXI.Text({ text: style.label, style: { fontSize: HEX_SIZE * 0.85 } });
-      text.anchor.set(0.5);
-      text.position.set(x, y);
-      text.eventMode = "none";
-      boardLayer.addChild(text);
-    }
   }
+}
+
+// Vert pseudo-aléatoire mais stable pour une case (donne du relief à la jungle).
+function landGreen(q, r) {
+  const h = ((q * 73856093) ^ (r * 19349663)) >>> 0;
+  return LAND_GREENS[h % LAND_GREENS.length];
+}
+
+// Clôture électrique : contour hexagonal rouge en pointillés autour des enclos.
+function drawFences() {
+  for (const tile of state.tiles.values()) {
+    if (tile.type !== TILE.RAPTOR_PEN && tile.type !== TILE.SPITTER_PEN) continue;
+    const { x, y } = axialToPixel(tile.q, tile.r, HEX_SIZE);
+    const corners = hexCorners(x, y, HEX_SIZE - 4);
+    const g = new PIXI.Graphics();
+    for (let i = 0; i < 6; i++) {
+      const ax = corners[i * 2], ay = corners[i * 2 + 1];
+      const bx = corners[((i + 1) % 6) * 2], by = corners[((i + 1) % 6) * 2 + 1];
+      dashedSegment(g, ax, ay, bx, by, 7, 5);
+    }
+    g.stroke({ width: 3, color: FENCE_RED });
+    g.eventMode = "none";
+    boardLayer.addChild(g);
+  }
+}
+
+// Trace un segment en pointillés (dash/gap) dans un Graphics (à valider par g.stroke()).
+function dashedSegment(g, ax, ay, bx, by, dash, gap) {
+  const len = Math.hypot(bx - ax, by - ay);
+  const ux = (bx - ax) / len, uy = (by - ay) / len;
+  let d = 0;
+  while (d < len) {
+    const d2 = Math.min(d + dash, len);
+    g.moveTo(ax + ux * d, ay + uy * d).lineTo(ax + ux * d2, ay + uy * d2);
+    d += dash + gap;
+  }
+}
+
+// Tour Road : trait jaune épais reliant les centres des cases route adjacentes.
+function drawRoad() {
+  const roads = [...state.tiles.values()].filter((t) => t.type === TILE.ROAD);
+  const edge = new PIXI.Graphics();
+  const core = new PIXI.Graphics();
+  const w = HEX_SIZE * 0.4;
+  for (const t of roads) {
+    const a = axialToPixel(t.q, t.r, HEX_SIZE);
+    for (const n of neighbors(t.q, t.r)) {
+      const other = state.tiles.get(key(n.q, n.r));
+      if (!other || other.type !== TILE.ROAD) continue;
+      if (n.r < t.r || (n.r === t.r && n.q < t.q)) continue; // une seule fois par paire
+      const b = axialToPixel(n.q, n.r, HEX_SIZE);
+      edge.moveTo(a.x, a.y).lineTo(b.x, b.y);
+      core.moveTo(a.x, a.y).lineTo(b.x, b.y);
+    }
+    // Pastille de raccord aux jonctions.
+    edge.circle(a.x, a.y, (w + 5) / 2);
+    core.circle(a.x, a.y, w / 2);
+  }
+  edge.stroke({ width: w + 5, color: ROAD_EDGE, cap: "round", join: "round" }).fill(ROAD_EDGE);
+  core.stroke({ width: w, color: ROAD_YELLOW, cap: "round", join: "round" }).fill(ROAD_YELLOW);
+  edge.eventMode = "none";
+  core.eventMode = "none";
+  boardLayer.addChild(edge, core);
+}
+
+// Icônes : bâtiments (refuges, Visitor Center), héliport/port, START.
+function drawIcons() {
+  for (const tile of state.tiles.values()) {
+    const { x, y } = axialToPixel(tile.q, tile.r, HEX_SIZE);
+    const style = TILE_STYLE[tile.type];
+    if (style && style.disc) {
+      const disc = new PIXI.Graphics();
+      disc.circle(x, y, HEX_SIZE * 0.34).fill(style.disc).stroke({ width: 2, color: 0xffffff });
+      disc.eventMode = "none";
+      boardLayer.addChild(disc);
+    }
+    if (style && style.label) addLabel(style.label, x, y, HEX_SIZE * 0.6);
+    if (tile.type === TILE.PAWN_START) addLabel("START", x, y + HEX_SIZE * 0.7, 13, true);
+  }
+}
+
+// Ajoute un texte centré (emoji ou libellé) au plateau.
+function addLabel(text, x, y, size, isTag = false) {
+  const style = isTag
+    ? { fontSize: size, fontWeight: "bold", fill: 0xffffff, stroke: { color: 0x1a1a1a, width: 3 } }
+    : { fontSize: size };
+  const t = new PIXI.Text({ text, style });
+  t.anchor.set(0.5);
+  t.position.set(x, y);
+  t.eventMode = "none";
+  boardLayer.addChild(t);
 }
 
 // ---------- Rendu dynamique ----------

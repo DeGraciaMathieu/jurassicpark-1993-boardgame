@@ -54,6 +54,54 @@ body {
 
 #stage-container canvas { display: block; }
 
+/* ---- Overlay carte (boussole, légende, logo) : décor, sans capter les clics ---- */
+#map-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+#map-overlay > * { position: absolute; }
+
+.compass {
+  top: 14px; right: 16px; width: 62px; height: 62px;
+  display: grid; place-items: center;
+  grid-template: "n n n" ". dot ." "s s s" / 1fr auto 1fr;
+  border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7);
+  background: rgba(6, 30, 48, 0.35); color: #fff;
+  font-size: 12px; font-weight: bold; text-shadow: 0 1px 2px #000;
+}
+.compass .c-n { grid-area: n; }
+.compass .c-s { grid-area: s; }
+.compass .c-dot { grid-area: dot; color: var(--accent); font-size: 14px; }
+.compass .c-w { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
+.compass .c-e { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+
+.legend {
+  left: 16px; bottom: 16px;
+  background: rgba(6, 30, 48, 0.55); border: 2px solid var(--accent); border-radius: 10px;
+  padding: 10px 12px; color: #fff; font-size: 12px; line-height: 1.9;
+  backdrop-filter: blur(2px);
+}
+.lg-row { display: flex; align-items: center; gap: 8px; }
+.lg-row em { opacity: 0.75; font-style: italic; }
+.sw { width: 26px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 26px; }
+.sw.oval { width: 22px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.5); }
+.sw.oval.spitter { background: #d4ac0d; }
+.sw.oval.raptor { background: #27ae60; }
+.sw.oval.trex { background: #c0392b; }
+.sw.fence { height: 0; border-top: 3px dashed var(--danger); }
+.sw.road { height: 6px; border-radius: 3px; background: #f7d64b; border: 1px solid #d9a441; }
+.sw.disc { font-size: 15px; }
+
+.jp-logo {
+  right: 18px; bottom: 16px; text-align: center; color: #fff;
+  text-shadow: 0 2px 4px #000;
+}
+.jp-logo .jp-rex { display: block; font-size: 34px; line-height: 1; }
+.jp-logo .jp-name {
+  display: block; font-weight: bold; letter-spacing: 2px; font-size: 20px;
+  color: #f7d64b; -webkit-text-stroke: 1px #7a1d16;
+}
+.jp-logo .jp-sub {
+  display: block; font-style: italic; font-size: 14px; color: #f7d64b; margin-top: -2px;
+}
+
 #sidebar {
   grid-area: side;
   background: var(--panel);
