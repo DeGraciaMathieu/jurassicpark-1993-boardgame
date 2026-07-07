@@ -2,10 +2,11 @@
 // original (Milton Bradley, 1992). La grille est écrite à la main en décalé "odd-r" :
 // chaque caractère = une case, chaque ligne = une rangée d'hexagones.
 //
-//   '.' océan (hors plateau)   'L' terre (case normale)   'R' route
+//   '.' océan (hors plateau)   'L' terre (case normale)   'R' route (Tour Road)
 //   'V' Visitor Center (arrivée)   'M' Maintenance Shed (refuge)
 //   'A' enclos à raptors   'S' enclos à spitters
 //   'T' départ T-Rex   'P' départ des joueurs
+//   'H' héliport (décor)   'O' port (décor)
 
 import { offsetToAxial, key } from "./hex.js";
 
@@ -18,6 +19,8 @@ export const TILE = {
   SPITTER_PEN: "spitterPen",
   TREX_START: "trexStart",
   PAWN_START: "pawnStart",
+  HELIPORT: "heliport",
+  PORT: "port",
 };
 
 const CHAR_TO_TILE = {
@@ -29,27 +32,34 @@ const CHAR_TO_TILE = {
   S: TILE.SPITTER_PEN,
   T: TILE.TREX_START,
   P: TILE.PAWN_START,
+  H: TILE.HELIPORT,
+  O: TILE.PORT,
 };
 
-// Représentation ASCII de l'île (nord en haut, sud en bas).
+// Représentation ASCII de l'île, redessinée d'après la carte du plateau Milton Bradley
+// (nord en haut, sud en bas) : la Tour Road (R) forme une grande boucle jaune autour
+// des enclos, le Visitor Center (V) est au nord, le START des joueurs (P) et le T-Rex (T)
+// au sud, l'héliport (H) sur la côte ouest et le port (O) sur la côte est.
 const MAP = [
-  "...........",
-  "....LLL....",
-  "...LMLLL...",
-  "..LLLVLL...",
-  "..LLRRLLL..",
-  "..LARLMLL..",
-  "..LLRRLLL..",
-  "..LMRLSLL..",
-  "..LLRLLML..",
-  "..LARLLLL..",
-  "..LLRRLSL..",
-  "...LMRLLL..",
-  "..LLRLSLL..",
-  "..LLRLALM..",
-  "...LRRLLL..",
-  "...LPTLL...",
-  "....LLL....",
+  ".....LLL.....",
+  "....LLLLL....",
+  "...LLLVLLL...",
+  "...LRRRRRLL..",
+  "...LRMALRLL..",
+  "...LRLLSRLL..",
+  "...LRSLMRLL..",
+  "...LRLMLRLL..",
+  ".HLLRALLRLL..",
+  "..LLRLLMRLLO.",
+  "..LLRMSLRLL..",
+  "...LRLLLRLL..",
+  "...LRLMARLL..",
+  "...LRLLLRLL..",
+  "...LRMLLRLL..",
+  "...LRLLLRL...",
+  "...LRRRRRL...",
+  "....LLPTL....",
+  ".....LLL.....",
 ];
 
 // Construit la table des cases : Map indexée par "q,r".
